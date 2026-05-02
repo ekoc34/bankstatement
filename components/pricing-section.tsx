@@ -4,12 +4,12 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth, PRO_PRICE } from "@/lib/auth-context"
 
 const plans = [
   {
     name: "Free",
-    price: "$0",
+    price: "€0",
     period: "forever",
     description: "Perfect for occasional use",
     features: [
@@ -24,7 +24,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "$12",
+    price: PRO_PRICE,
     period: "per month",
     description: "For professionals who need more",
     features: [
@@ -45,8 +45,6 @@ export function PricingSection() {
   const { isLoggedIn, isProUser, setShowLoginModal, setShowUpgradeModal } = useAuth()
 
   const handlePlanClick = (plan: typeof plans[0]) => {
-    console.log("[v0] Pricing: Plan clicked:", plan.name)
-    
     if (plan.actionType === "scroll") {
       // Scroll to the converter section for free plan
       window.scrollTo({ top: 0, behavior: "smooth" })
@@ -61,10 +59,8 @@ export function PricingSection() {
       }
       
       if (!isLoggedIn) {
-        console.log("[v0] Pricing: User not logged in, showing login modal")
         setShowLoginModal(true)
       } else {
-        console.log("[v0] Pricing: User logged in, showing upgrade modal")
         setShowUpgradeModal(true)
       }
     }
