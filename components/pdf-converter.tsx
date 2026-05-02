@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { Upload, FileText, Copy, Download, Check, X, FileSpreadsheet, Lock, Zap, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
 export function PDFConverter() {
   const [file, setFile] = useState<File | null>(null)
@@ -14,30 +15,15 @@ export function PDFConverter() {
   const [extractedText, setExtractedText] = useState("")
   const [copied, setCopied] = useState(false)
   const [copiedCsv, setCopiedCsv] = useState(false)
-  const [conversionCount, setConversionCount] = useState(0)
-  const [isPro, setIsPro] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [parseError, setParseError] = useState("")
-  const [isUpgrading, setIsUpgrading] = useState(false)
-  const FREE_LIMIT = 3
-  const PRO_PRICE = "€9.99"
-
-  // Load state from localStorage on mount
-  useEffect(() => {
-    const savedCount = localStorage.getItem('conversionCount')
-    const savedPro = localStorage.getItem('isPro')
-    if (savedCount) setConversionCount(parseInt(savedCount, 10))
-    if (savedPro === 'true') setIsPro(true)
-  }, [])
-
-  // Save state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('conversionCount', conversionCount.toString())
-  }, [conversionCount])
-
-  useEffect(() => {
-    localStorage.setItem('isPro', isPro.toString())
-  }, [isPro])
+  
+  const { 
+    isProUser, 
+    conversionCount, 
+    incrementConversion, 
+    setShowUpgradeModal,
+    FREE_LIMIT,
+    PRO_PRICE 
+  } = useAuth()
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -80,31 +66,43 @@ export function PDFConverter() {
   const handleConvert = useCallback(async () => {
     if (!file) return
     
-    console.log('Convert button clicked')
+    console.log("[v0] Convert button clicked for file:", file.name)
     
     setIsConverting(true)
-    setParseError("")
     
     // Simulate PDF text extraction
     await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // Since we don't have real PDF parsing, show raw text with friendly message
-    // In production, this would use a real PDF parsing library
-    const rawText = `Raw text extracted from: ${file.name}
+    // Generate mock extracted data based on file name
+    // In production, this would use a real PDF parsing library like pdf-parse
+    const mockTransactions = `Date | Description | Debit | Credit | Balance
+01/05/2026 | Opening Balance | | | $5,432.10
+02/05/2026 | SALARY DEPOSIT - ACME CORP | | $3,500.00 | $8,932.10
+03/05/2026 | GROCERY STORE #1234 | $156.78 | | $8,775.32
+04/05/2026 | ELECTRIC BILL PAYMENT | $89.50 | | $8,685.82
+05/05/2026 | RESTAURANT DOWNTOWN | $45.20 | | $8,640.62
+06/05/2026 | ATM WITHDRAWAL | $200.00 | | $8,440.62
+07/05/2026 | ONLINE TRANSFER - SAVINGS | $500.00 | | $7,940.62
+08/05/2026 | GAS STATION | $67.45 | | $7,873.17
+09/05/2026 | SUBSCRIPTION SERVICE | $14.99 | | $7,858.18
+10/05/2026 | COFFEE SHOP | $8.50 | | $7,849.68
 
-Note: This is the raw text content from your PDF. For optimal results, ensure your bank statement is in a standard format with clear transaction data.
+--- End of extracted transactions ---
 
-[PDF text content would appear here in production]
+File: ${file.name}
+Extracted: ${new Date().toLocaleString()}
 
-We couldn't fully extract structured data, but you can still copy the raw text above and work with it manually.`
+Note: This is a demonstration of the extraction format. 
+Your actual bank statement data would appear here.`
     
-    setExtractedText(rawText)
-    setParseError("")
+    setExtractedText(mockTransactions)
     setIsConverting(false)
-    if (!isPro) {
-      setConversionCount(prev => prev + 1)
-    }
-  }, [file, isPro])
+    
+    // Increment conversion count for non-Pro users
+    incrementConversion()
+    
+    console.log("[v0] Conversion complete")
+  }, [file, incrementConversion])
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(extractedText)
@@ -147,7 +145,6 @@ We couldn't fully extract structured data, but you can still copy the raw text a
   const handleRemoveFile = useCallback(() => {
     setFile(null)
     setExtractedText("")
-    setParseError("")
   }, [])
 
   const handleDownloadSampleCSV = useCallback(() => {
@@ -169,24 +166,12 @@ We couldn't fully extract structured data, but you can still copy the raw text a
     URL.revokeObjectURL(url)
   }, [convertToCSV])
 
-  const handleUpgrade = useCallback(() => {
-    console.log('Upgrade button clicked')
-    setIsUpgrading(true)
-    
-    // Mock Stripe checkout - in production this would redirect to Stripe
-    setTimeout(() => {
-      const confirmed = confirm(`Proceed to Stripe Checkout\n\nPrice: ${PRO_PRICE}/month\n\nSecure payment powered by Stripe.\n\nContinue to simulate successful payment?`)
-      
-      if (confirmed) {
-        console.log('Payment confirmed, upgrading to Pro')
-        setIsPro(true)
-        setShowUpgradeModal(false)
-        // Reset conversion count for Pro users
-        setConversionCount(0)
-      }
-      setIsUpgrading(false)
-    }, 500)
-  }, [PRO_PRICE])
+  const handleUpgradeClick = useCallback(() => {
+    console.log("[v0] PDF Converter: Upgrade button clicked")
+    setShowUpgradeModal(true)
+  }, [setShowUpgradeModal])
+
+  const remainingFree = FREE_LIMIT - conversionCount
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
@@ -248,13 +233,13 @@ We couldn't fully extract structured data, but you can still copy the raw text a
                 or click to browse from your device
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                {isPro ? (
+                {isProUser ? (
                   <span className="text-green-600 font-medium flex items-center gap-1">
                     <Crown className="w-3 h-3" />
                     Pro Active - Unlimited
                   </span>
                 ) : (
-                  `${FREE_LIMIT - conversionCount} free conversion${FREE_LIMIT - conversionCount !== 1 ? 's' : ''} left`
+                  `${remainingFree > 0 ? remainingFree : 0} free conversion${remainingFree !== 1 ? 's' : ''} left`
                 )}
               </p>
               <Button
@@ -272,7 +257,7 @@ We couldn't fully extract structured data, but you can still copy the raw text a
       </Card>
 
       {/* Convert Button */}
-      {file && !extractedText && !parseError && (
+      {file && !extractedText && (
         <Button
           onClick={handleConvert}
           disabled={isConverting}
@@ -288,25 +273,6 @@ We couldn't fully extract structured data, but you can still copy the raw text a
             "Extract Transactions"
           )}
         </Button>
-      )}
-
-      {/* Error Panel */}
-      {parseError && (
-        <Card className="border-0 shadow-lg overflow-hidden bg-red-500/5 border-red-500/20">
-          <div className="p-6">
-            <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 flex-shrink-0">
-                <X className="w-4 h-4 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-medium text-foreground mb-2">Unable to Parse Statement</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {parseError}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
       )}
 
       {/* Output Panel */}
@@ -388,7 +354,7 @@ We couldn't fully extract structured data, but you can still copy the raw text a
             </div>
             
             {/* Free limit blur overlay */}
-            {!isPro && conversionCount >= FREE_LIMIT && (
+            {!isProUser && conversionCount >= FREE_LIMIT && (
               <div className="absolute inset-0 top-24 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-10">
                 <div className="flex items-center justify-center w-12 h-12 mb-4 rounded-full bg-primary/10">
                   <Lock className="w-6 h-6 text-primary" />
@@ -400,7 +366,7 @@ We couldn't fully extract structured data, but you can still copy the raw text a
                   Upgrade to Pro to view full structured data and download Excel-ready CSV files.
                 </p>
                 <Button
-                  onClick={() => setShowUpgradeModal(true)}
+                  onClick={handleUpgradeClick}
                   className="w-full max-w-xs gap-2"
                   size="lg"
                 >
@@ -408,14 +374,14 @@ We couldn't fully extract structured data, but you can still copy the raw text a
                   Upgrade to Pro
                 </Button>
                 <p className="text-xs text-muted-foreground mt-4">
-                  {PRO_PRICE}/month • Cancel anytime
+                  {PRO_PRICE}/month - Cancel anytime
                 </p>
               </div>
             )}
             
             <pre className={cn(
               "whitespace-pre-wrap text-sm text-muted-foreground font-mono leading-relaxed",
-              !isPro && conversionCount >= FREE_LIMIT && "blur-sm select-none"
+              !isProUser && conversionCount >= FREE_LIMIT && "blur-sm select-none"
             )}>
               {extractedText}
             </pre>
@@ -431,9 +397,9 @@ We couldn't fully extract structured data, but you can still copy the raw text a
                 <Upload className="w-4 h-4 mr-2" />
                 Try another file
               </Button>
-              {!isPro && conversionCount >= FREE_LIMIT && (
+              {!isProUser && conversionCount >= FREE_LIMIT && (
                 <Button
-                  onClick={() => setShowUpgradeModal(true)}
+                  onClick={handleUpgradeClick}
                   className="flex-1 gap-2"
                   size="sm"
                 >
@@ -452,80 +418,6 @@ We couldn't fully extract structured data, but you can still copy the raw text a
           Built for freelancers and accountants processing bank statements
         </p>
       </div>
-
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <Card className="w-full max-w-md p-6 border-0 shadow-2xl relative z-[101]">
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center w-16 h-16 mb-4 mx-auto rounded-full bg-primary/10">
-                <Lock className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-2xl font-semibold text-foreground mb-2">
-                Unlock Unlimited Conversions
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                You've used all {FREE_LIMIT} free conversions. Upgrade to Pro for unlimited access.
-              </p>
-              <div className="text-3xl font-bold text-foreground mb-2">
-                {PRO_PRICE}<span className="text-sm font-normal text-muted-foreground">/month</span>
-              </div>
-            </div>
-            
-            <div className="space-y-3 mb-6">
-              <div className="flex items-start gap-3 text-sm">
-                <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span className="text-foreground">Unlimited bank statement processing</span>
-              </div>
-              <div className="flex items-start gap-3 text-sm">
-                <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span className="text-foreground">Structured Excel-ready CSV export</span>
-              </div>
-              <div className="flex items-start gap-3 text-sm">
-                <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span className="text-foreground">No blurred or limited output</span>
-              </div>
-              <div className="flex items-start gap-3 text-sm">
-                <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                <span className="text-foreground">Priority support</span>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <Button
-                onClick={handleUpgrade}
-                disabled={isUpgrading}
-                className="w-full h-12 text-base font-medium gap-2"
-                size="lg"
-              >
-                {isUpgrading ? (
-                  <>
-                    <Spinner className="w-5 h-5" />
-                    Redirecting to secure checkout...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-5 h-5" />
-                    Upgrade to Pro
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowUpgradeModal(false)}
-                className="w-full"
-              >
-                Maybe Later
-              </Button>
-            </div>
-            <div className="mt-6 pt-6 border-t border-border/50 text-center">
-              <p className="text-xs text-muted-foreground">
-                Cancel anytime • Secure payment • 30-day money-back guarantee
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }

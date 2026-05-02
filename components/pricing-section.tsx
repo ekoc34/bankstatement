@@ -1,7 +1,10 @@
+"use client"
+
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 
 const plans = [
   {
@@ -10,13 +13,14 @@ const plans = [
     period: "forever",
     description: "Perfect for occasional use",
     features: [
-      "5 PDF conversions per month",
+      "3 PDF conversions",
       "Max 10 MB file size",
       "Standard processing speed",
       "Email support",
     ],
     cta: "Get Started",
     popular: false,
+    actionType: "scroll" as const,
   },
   {
     name: "Pro",
@@ -31,12 +35,48 @@ const plans = [
       "OCR for scanned PDFs",
       "Priority support",
     ],
-    cta: "Start Free Trial",
+    cta: "Upgrade to Pro",
     popular: true,
+    actionType: "upgrade" as const,
   },
 ]
 
 export function PricingSection() {
+  const { isLoggedIn, isProUser, setShowLoginModal, setShowUpgradeModal } = useAuth()
+
+  const handlePlanClick = (plan: typeof plans[0]) => {
+    console.log("[v0] Pricing: Plan clicked:", plan.name)
+    
+    if (plan.actionType === "scroll") {
+      // Scroll to the converter section for free plan
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      return
+    }
+    
+    if (plan.actionType === "upgrade") {
+      if (isProUser) {
+        // Already Pro, just scroll to converter
+        window.scrollTo({ top: 0, behavior: "smooth" })
+        return
+      }
+      
+      if (!isLoggedIn) {
+        console.log("[v0] Pricing: User not logged in, showing login modal")
+        setShowLoginModal(true)
+      } else {
+        console.log("[v0] Pricing: User logged in, showing upgrade modal")
+        setShowUpgradeModal(true)
+      }
+    }
+  }
+
+  const getButtonText = (plan: typeof plans[0]) => {
+    if (plan.name === "Pro" && isProUser) {
+      return "Current Plan"
+    }
+    return plan.cta
+  }
+
   return (
     <section className="w-full py-24 md:py-32">
       <div className="container px-4 md:px-6 mx-auto max-w-5xl">
@@ -92,8 +132,10 @@ export function PricingSection() {
                   className="w-full"
                   variant={plan.popular ? "default" : "outline"}
                   size="lg"
+                  onClick={() => handlePlanClick(plan)}
+                  disabled={plan.name === "Pro" && isProUser}
                 >
-                  {plan.cta}
+                  {getButtonText(plan)}
                 </Button>
               </CardFooter>
             </Card>
