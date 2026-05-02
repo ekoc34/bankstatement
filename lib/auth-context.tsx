@@ -59,12 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [conversionCount])
 
   const login = useCallback(() => {
-    console.log("[v0] Login button clicked")
     setIsLoggingIn(true)
     
     // Simulate login delay
     setTimeout(() => {
-      console.log("[v0] User logged in successfully")
       setIsLoggedIn(true)
       setIsLoggingIn(false)
       setShowLoginModal(false)
@@ -72,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
-    console.log("[v0] Logout clicked")
     setIsLoggedIn(false)
     setIsProUser(false)
     setConversionCount(0)
@@ -82,11 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const upgrade = useCallback(() => {
-    console.log("[v0] Upgrade button clicked")
-    
     // Must be logged in first
     if (!isLoggedIn) {
-      console.log("[v0] User not logged in, showing login modal first")
       setShowUpgradeModal(false)
       setShowLoginModal(true)
       return
@@ -94,20 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setIsUpgrading(true)
     
-    // Mock Stripe checkout
+    // Demo upgrade simulation (no real payment)
     setTimeout(() => {
-      const confirmed = confirm(
-        `Proceed to Stripe Checkout\n\nPrice: ${PRO_PRICE}/month\n\nSecure payment powered by Stripe.\n\nContinue to simulate successful payment?`
-      )
-      
-      if (confirmed) {
-        console.log("[v0] Payment confirmed, upgrading to Pro")
-        setIsProUser(true)
-        setShowUpgradeModal(false)
-        setConversionCount(0)
-      }
+      setIsProUser(true)
+      setShowUpgradeModal(false)
+      setConversionCount(0)
       setIsUpgrading(false)
-    }, 500)
+    }, 1000)
   }, [isLoggedIn])
 
   const incrementConversion = useCallback(() => {

@@ -16,7 +16,6 @@ export function LoginModal() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Login form submitted with email:", email)
     login()
   }
 
@@ -97,7 +96,6 @@ export function UpgradeModal() {
   if (!showUpgradeModal) return null
 
   const handleUpgrade = () => {
-    console.log("[v0] Upgrade modal: upgrade button clicked, isLoggedIn:", isLoggedIn)
     if (!isLoggedIn) {
       setShowUpgradeModal(false)
       setShowLoginModal(true)
@@ -164,12 +162,12 @@ export function UpgradeModal() {
             {isUpgrading ? (
               <>
                 <Spinner className="w-5 h-5" />
-                Redirecting to secure checkout...
+                Activating Pro...
               </>
             ) : isLoggedIn ? (
               <>
                 <Zap className="w-5 h-5" />
-                Upgrade to Pro
+                Simulate Pro Upgrade
               </>
             ) : (
               <>
@@ -188,7 +186,7 @@ export function UpgradeModal() {
         </div>
         <div className="mt-6 pt-6 border-t border-border/50 text-center">
           <p className="text-xs text-muted-foreground">
-            Cancel anytime - Secure payment - 30-day money-back guarantee
+            This is a demo upgrade simulation
           </p>
         </div>
       </Card>
