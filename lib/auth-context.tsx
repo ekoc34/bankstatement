@@ -22,8 +22,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const FREE_LIMIT = 3
-const PRO_PRICE = "€9.99"
+export const FREE_LIMIT = 3
+export const PRO_PRICE = "€9.99"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
